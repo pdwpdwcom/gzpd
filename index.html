@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蒲典论坛 - 官方最新回家地址</title>
+    <style>
+        body { background-color: #0b2d4f; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; padding: 50px 20px; margin: 0; }
+        .container { max-width: 500px; margin: 0 auto; background: rgba(255,255,255,0.05); padding: 30px; border-radius: 12px; border: 1px solid #d4af37; }
+        h2 { color: #d4af37; margin-bottom: 10px; }
+        .status { font-size: 16px; margin: 20px 0; color: #a0c0e0; }
+        .btn { display: block; padding: 12px; background: #d4af37; color: #0b2d4f; border-radius: 6px; text-decoration: none; font-weight: bold; margin: 15px 0; transition: background 0.3s; }
+        .btn:hover { background: #fff; }
+        .links-title { margin-top: 25px; font-size: 14px; color: #d4af37; text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>蒲典交流论坛</h2>
+        <p>高品质交流社区 · 永不失联</p>
+        
+        <p class="status" id="status">正在安全通道检测中，请稍候...</p>
+        
+        <div id="links" style="display:none;">
+            </div>
+    </div>
+
+    <script>
+        // 【核心双保险：备用域名列表】
+        // 当 GitHub 接口挂掉时，系统会死死抓着下面这几个域名挨个测速，谁能通就进谁
+        const backupDomains = [
+            "https://www.gzpd52.com",
+            "https://www.gzpd51.com",
+            "https://www.gzpd50.com",
+            "https://www.gzpd49.com",
+            "https://www.gzpd53.com",
+            "https://www.pdwpdw.com"
+        ];
+
+        let resolved = false;
+        const statusEl = document.getElementById('status');
+
+        // 第一步：优先尝试读取动态的 api.json
+        fetch('./api.json?t=' + new Date().getTime())
+            .then(res => res.json())
+            .then(data => {
+                const currentDomain = data.newDomain;
+                if (currentDomain) {
+                    // 成功拿到最新域名，开始探测跳转
+                    testAndRedirect(currentDomain, [currentDomain]);
+                } else {
+                    // json 格式不对，降级走备用列表
+                    startBackupRoute();
+                }
+            })
+            .catch(() => {
+                // 读取 api.json 失败（网络波动），立刻启动备用域名测速
+                startBackupRoute();
+            });
+
+        // 启动备用域名轮询
+        function startBackupRoute() {
+            statusEl.innerText = "官方通道调整中，正在启用备用安全链路...";
+            backupDomains.forEach(url => {
+                testAndRedirect(url, backupDomains);
+            });
+            
+            // 5秒后如果还没成功跳转，弹出手动点击区域
+            setTimeout(() => {
+                if (!resolved) {
+                    showFallback(backupDomains);
+                }
+            }, 5000);
+        }
+
+        // 核心检测与跳转逻辑
+        function testAndRedirect(url, allUrls) {
+            const img = new Image();
+            // 探测论坛根目录的 robots.txt
+            img.src = url + "/robots.txt?t=" + new Date().getTime();
+            
+            img.onload = img.onerror = function() {
+                if (!resolved) {
+                    resolved = true;
+                    statusEl.innerText = "通道检测成功！正在进入蒲典...";
+                    setTimeout(() => { window.location.href = url; }, 500);
+                }
+            };
+        }
+
+        // 展示手动点击的备用链接
+        function showFallback(domains) {
+            statusEl.innerText = "自动跳转受到网络干扰，请尝试手动点击进入：";
+            const linksDiv = document.getElementById('links');
+            linksDiv.style.display = 'block';
+            linksDiv.innerHTML = '<div class="links-title">【黄金备用通道】</div>';
+            
+            // 去重防止域名重复显示
+            const uniqueDomains = [...new Set(domains)];
+            uniqueDomains.forEach(url => {
+                const a = document.createElement('a');
+                a.href = url;
+                a.className = 'btn';
+                // 仅显示域名主体，显得清爽高级
+                a.innerText = "进入 ➔ " + url.replace('https://www.', '').replace('https://', '');
+                linksDiv.appendChild(a);
+            });
+        }
+    </script>
+</body>
+</html>
